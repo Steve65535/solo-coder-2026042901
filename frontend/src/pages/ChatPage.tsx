@@ -3,8 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Send, Loader2, FileText, ExternalLink, Plus } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
 import { ChatMessage, ContextChunk } from '@/services/api';
+import { useTranslation } from 'react-i18next';
 
 export default function ChatPage() {
+  const { t, i18n } = useTranslation();
   const { sessionId } = useParams();
   const navigate = useNavigate();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -48,7 +50,7 @@ export default function ChatPage() {
     const targetSessionId = currentSessionId;
     
     if (!targetSessionId) {
-      useAppStore.setState({ error: '请先点击"新建对话"创建一个会话' });
+      useAppStore.setState({ error: t('chat.pleaseCreateSessionFirst') });
       return;
     }
 
@@ -87,10 +89,10 @@ export default function ChatPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-              {currentSession?.title || '新建对话'}
+              {currentSession?.title || t('chat.newChat')}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              {currentProject ? `项目: ${currentProject.name}` : '基于 RAG 技术的智能知识问答'}
+              {currentProject ? `${t('chat.project')}: ${currentProject.name}` : t('chat.basedOnRAG')}
             </p>
           </div>
           {currentProjectId && (
@@ -99,7 +101,7 @@ export default function ChatPage() {
               className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/30 rounded-lg transition-colors"
             >
               <Plus className="w-4 h-4" />
-              添加知识
+              {t('chat.addKnowledge')}
             </button>
           )}
         </div>
@@ -112,24 +114,23 @@ export default function ChatPage() {
               <FileText className="w-8 h-8 text-primary-600 dark:text-primary-400" />
             </div>
             <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
-              开始智能问答
+              {t('chat.startSmartQA')}
             </h2>
             <p className="text-gray-500 dark:text-gray-400 max-w-md mb-6">
-              上传文档到当前项目的知识库后，我可以基于文档内容回答您的问题。
-              支持混合召回和智能排序，为您提供最相关的答案。
+              {t('chat.qaIntro')}
             </p>
             <div className="grid grid-cols-2 gap-3 max-w-md w-full">
               <button
-                onClick={() => setInput('请介绍一下系统的功能')}
+                onClick={() => setInput(t('chat.introduceSystem'))}
                 className="p-3 text-left text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors border border-gray-200 dark:border-gray-700"
               >
-                请介绍一下系统的功能
+                {t('chat.introduceSystem')}
               </button>
               <button
                 onClick={() => currentProjectId && navigate(`/projects/${currentProjectId}/files`)}
                 className="p-3 text-left text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors border border-gray-200 dark:border-gray-700"
               >
-                先上传一些文档
+                {t('chat.uploadDocumentsFirst')}
               </button>
             </div>
           </div>
@@ -153,7 +154,7 @@ export default function ChatPage() {
             <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-md px-4 py-3 shadow-sm border border-gray-100 dark:border-gray-700">
               <div className="flex items-center gap-2 text-gray-400 dark:text-gray-500">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span className="text-sm">正在检索知识库...</span>
+                <span className="text-sm">{t('chat.retrievingKnowledgeBase')}</span>
               </div>
             </div>
           </div>
@@ -171,7 +172,7 @@ export default function ChatPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="输入您的问题..."
+                placeholder={t('chat.enterYourQuestion')}
                 className="w-full px-4 py-3 pr-12 border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent placeholder-gray-400 dark:placeholder-gray-500"
                 rows={1}
                 style={{ minHeight: '48px', maxHeight: '160px' }}
@@ -190,7 +191,7 @@ export default function ChatPage() {
             </button>
           </div>
           <p className="mt-2 text-xs text-gray-400 dark:text-gray-500 text-center">
-            按 Enter 发送，Shift+Enter 换行
+            {t('chat.pressEnterToSend')}
           </p>
         </div>
       </div>
@@ -206,6 +207,7 @@ interface ChatMessageComponentProps {
 }
 
 function ChatMessageComponent({ message, showChunks, onToggleChunks, formatScore }: ChatMessageComponentProps) {
+  const { t } = useTranslation();
   const isUser = message.role === 'user';
   const hasChunks = message.context_chunks && message.context_chunks.length > 0;
 
@@ -238,7 +240,7 @@ function ChatMessageComponent({ message, showChunks, onToggleChunks, formatScore
             >
               <ExternalLink className="w-3 h-3" />
               <span>
-                参考 {message.context_chunks!.length} 个文档片段
+                {t('chat.referenceChunks', { count: message.context_chunks!.length })}
               </span>
             </button>
 
@@ -259,7 +261,7 @@ function ChatMessageComponent({ message, showChunks, onToggleChunks, formatScore
 
       {isUser && (
         <div className="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center flex-shrink-0">
-          <span className="text-xs font-medium text-gray-600 dark:text-gray-200">我</span>
+          <span className="text-xs font-medium text-gray-600 dark:text-gray-200">{t('chat.me')}</span>
         </div>
       )}
     </div>
@@ -272,6 +274,7 @@ interface ContextChunkCardProps {
 }
 
 function ContextChunkCard({ chunk, formatScore }: ContextChunkCardProps) {
+  const { t } = useTranslation();
   return (
     <div className="p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-100 dark:border-gray-700">
       <div className="flex items-center justify-between mb-2">
@@ -290,7 +293,7 @@ function ContextChunkCard({ chunk, formatScore }: ContextChunkCardProps) {
               : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300'
           }`}
         >
-          相关度: {formatScore(chunk.score)}
+          {t('chat.relevance')}: {formatScore(chunk.score)}
         </span>
       </div>
       <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-3">

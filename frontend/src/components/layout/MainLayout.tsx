@@ -1,9 +1,11 @@
 import { Outlet, Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { MessageSquare, FileText, Plus, Trash2, Loader2, Folder, X, ChevronDown, ChevronRight, Sun, Moon } from 'lucide-react';
+import { MessageSquare, FileText, Plus, Trash2, Loader2, Folder, X, ChevronDown, ChevronRight, Sun, Moon, Globe } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
 import { useEffect, useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 export default function MainLayout() {
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const params = useParams();
@@ -127,9 +129,14 @@ export default function MainLayout() {
     }
   };
 
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'zh' ? 'en' : 'zh';
+    i18n.changeLanguage(newLang);
+  };
+
   const handleDeleteProject = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (confirm('确定要删除这个项目吗？该项目下的所有会话和文档也将被删除。')) {
+    if (confirm(t('layout.deleteProjectConfirm'))) {
       await deleteProject(id);
       if (projects.length <= 1) {
         navigate('/projects');
@@ -139,7 +146,7 @@ export default function MainLayout() {
 
   const handleDeleteSession = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (confirm('确定要删除这个会话吗？')) {
+    if (confirm(t('layout.deleteSessionConfirm'))) {
       await deleteSession(id);
       if (currentSessionId === id && currentProjectId) {
         navigate(`/projects/${currentProjectId}`);
@@ -171,12 +178,12 @@ export default function MainLayout() {
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffMins < 1) return '刚刚';
-    if (diffMins < 60) return `${diffMins}分钟前`;
-    if (diffHours < 24) return `${diffHours}小时前`;
-    if (diffDays < 7) return `${diffDays}天前`;
+    if (diffMins < 1) return t('layout.justNow');
+    if (diffMins < 60) return t('layout.minutesAgo', { count: diffMins });
+    if (diffHours < 24) return t('layout.hoursAgo', { count: diffHours });
+    if (diffDays < 7) return t('layout.daysAgo', { count: diffDays });
     
-    return date.toLocaleDateString('zh-CN');
+    return date.toLocaleDateString(i18n.language === 'zh' ? 'zh-CN' : 'en-US');
   };
 
   const isInFilesPage = location.pathname.includes('/files');
@@ -188,7 +195,7 @@ export default function MainLayout() {
         <div className="fixed inset-0 bg-black/50 dark:bg-black/70 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-96 max-w-full">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">新建项目</h3>
+              <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{t('modals.newProject')}</h3>
               <button
                 onClick={() => setShowNewProjectModal(false)}
                 className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
@@ -199,7 +206,7 @@ export default function MainLayout() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  项目名称
+                  {t('modals.projectName')}
                 </label>
                 <input
                   ref={newProjectInputRef}
@@ -207,18 +214,18 @@ export default function MainLayout() {
                   value={newProjectName}
                   onChange={(e) => setNewProjectName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleCreateProject()}
-                  placeholder="输入项目名称..."
+                  placeholder={t('modals.enterProjectName')}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  描述（可选）
+                  {t('modals.projectDescription')}
                 </label>
                 <textarea
                   value={newProjectDescription}
                   onChange={(e) => setNewProjectDescription(e.target.value)}
-                  placeholder="输入项目描述..."
+                  placeholder={t('modals.enterProjectDescription')}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
                 />
@@ -228,7 +235,7 @@ export default function MainLayout() {
                   onClick={() => setShowNewProjectModal(false)}
                   className="flex-1 px-4 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                 >
-                  取消
+                  {t('common.cancel')}
                 </button>
                 <button
                   onClick={handleCreateProject}
@@ -236,7 +243,7 @@ export default function MainLayout() {
                   className="flex-1 px-4 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
                   {createLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  创建
+                  {t('common.create')}
                 </button>
               </div>
             </div>
@@ -248,19 +255,28 @@ export default function MainLayout() {
         <div className="p-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">智能问答系统</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('layout.appName')}</span>
           </div>
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            title={theme === 'light' ? '切换到暗色主题' : '切换到亮色主题'}
-          >
-            {theme === 'light' ? (
-              <Moon className="w-5 h-5" />
-            ) : (
-              <Sun className="w-5 h-5" />
-            )}
-          </button>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={toggleLanguage}
+              className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              title={i18n.language === 'zh' ? t('layout.switchToEnglish') : t('layout.switchToChinese')}
+            >
+              <Globe className="w-5 h-5" />
+            </button>
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              title={theme === 'light' ? t('layout.switchToDark') : t('layout.switchToLight')}
+            >
+              {theme === 'light' ? (
+                <Moon className="w-5 h-5" />
+              ) : (
+                <Sun className="w-5 h-5" />
+              )}
+            </button>
+          </div>
         </div>
 
         <div className="p-4 border-b border-gray-100 dark:border-gray-700">
@@ -274,7 +290,7 @@ export default function MainLayout() {
             ) : (
               <Plus className="w-4 h-4" />
             )}
-            新建对话
+            {t('layout.newChat')}
           </button>
         </div>
 
@@ -289,7 +305,7 @@ export default function MainLayout() {
               }`}
             >
               <MessageSquare className="w-4 h-4" />
-              <span className="text-sm font-medium">对话</span>
+              <span className="text-sm font-medium">{t('layout.chat')}</span>
             </Link>
             <Link
               to={currentProjectId ? `/projects/${currentProjectId}/files` : '/projects'}
@@ -300,19 +316,19 @@ export default function MainLayout() {
               }`}
             >
               <FileText className="w-4 h-4" />
-              <span className="text-sm font-medium">知识库</span>
+              <span className="text-sm font-medium">{t('layout.knowledgeBase')}</span>
             </Link>
           </div>
 
           <div className="space-y-1">
             <div className="flex items-center justify-between px-3 py-2">
               <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">
-                项目
+                {t('layout.projects')}
               </span>
               <button
                 onClick={() => setShowNewProjectModal(true)}
                 className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 p-1"
-                title="新建项目"
+                title={t('layout.newProject')}
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -323,7 +339,7 @@ export default function MainLayout() {
                 <Loader2 className="w-5 h-5 text-gray-400 dark:text-gray-500 animate-spin" />
               </div>
             ) : projects.length === 0 ? (
-              <p className="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">暂无项目</p>
+              <p className="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">{t('layout.noProjects')}</p>
             ) : (
               projects.map((project) => (
                 <div key={project.id}>
@@ -356,14 +372,14 @@ export default function MainLayout() {
                         {project.name}
                       </p>
                       <p className="text-xs text-gray-400 dark:text-gray-500">
-                        {project.description || '无描述'}
+                        {project.description || t('placeholders.noDescription')}
                       </p>
                     </div>
                     {projects.length > 1 && (
                       <button
                         onClick={(e) => handleDeleteProject(e, project.id)}
                         className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-opacity"
-                        title="删除项目"
+                        title={t('common.delete')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -373,14 +389,14 @@ export default function MainLayout() {
                   {expandedProjects.has(project.id) && (
                     <div className="ml-6 mt-1 space-y-0.5">
                       <div className="px-3 py-1 text-xs text-gray-400 dark:text-gray-500">
-                        历史会话
+                        {t('layout.historySessions')}
                       </div>
                       {currentProjectId === project.id && isLoading && sessions.length === 0 ? (
                         <div className="flex items-center justify-center py-2">
                           <Loader2 className="w-4 h-4 text-gray-400 dark:text-gray-500 animate-spin" />
                         </div>
                       ) : currentProjectId === project.id && sessions.length === 0 ? (
-                        <p className="px-3 py-1 text-xs text-gray-400 dark:text-gray-500">暂无会话</p>
+                        <p className="px-3 py-1 text-xs text-gray-400 dark:text-gray-500">{t('layout.noSessions')}</p>
                       ) : currentProjectId === project.id ? (
                         sessions.map((session) => (
                           <div
@@ -433,7 +449,7 @@ export default function MainLayout() {
               onClick={clearError}
               className="text-sm text-red-400 hover:text-red-600 dark:hover:text-red-300"
             >
-              关闭
+              {t('common.close')}
             </button>
           </div>
         )}
