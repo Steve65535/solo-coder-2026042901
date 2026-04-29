@@ -1,3 +1,4 @@
+use crate::services::llm_service::{create_llm_service, LlmService};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use crate::models::{Project, Session, Document, ChatMessage, Chunk};
@@ -10,6 +11,7 @@ pub struct AppState {
     pub documents: RwLock<std::collections::HashMap<uuid::Uuid, Document>>,
     pub chunks: RwLock<std::collections::HashMap<uuid::Uuid, Chunk>>,
     pub chat_history: RwLock<std::collections::HashMap<uuid::Uuid, Vec<ChatMessage>>>,
+    pub llm_service: Box<dyn LlmService>,
 }
 
 impl AppState {
@@ -18,6 +20,8 @@ impl AppState {
         
         std::fs::create_dir_all(&config.upload_dir).ok();
 
+        let llm_service = create_llm_service(config.llm.clone());
+
         let state = Arc::new(Self {
             config,
             projects: RwLock::new(std::collections::HashMap::new()),
@@ -25,6 +29,7 @@ impl AppState {
             documents: RwLock::new(std::collections::HashMap::new()),
             chunks: RwLock::new(std::collections::HashMap::new()),
             chat_history: RwLock::new(std::collections::HashMap::new()),
+            llm_service,
         });
 
         let default_project = Project {

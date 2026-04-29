@@ -93,7 +93,18 @@ pub async fn ask_question(
         .map(|c| format!("[{}]: {}", c.document_name, c.content))
         .collect();
 
-    let answer = generate_answer(&req.question, &context_text, &context_chunks);
+    let has_relevant_knowledge = !context_chunks.is_empty() 
+        && context_chunks.iter().any(|c| c.score > 0.1);
+
+    let answer = if has_relevant_knowledge {
+        state.llm_service
+            .generate_answer(&req.question, Some(&context_text), true)
+            .await?
+    } else {
+        state.llm_service
+            .generate_answer(&req.question, if context_text.is_empty() { None } else { Some(&context_text) }, false)
+            .await?
+    };
 
     let now = Utc::now();
 
@@ -168,85 +179,4 @@ pub async fn get_history(
         .unwrap_or_default();
 
     Ok(Json(messages))
-}
-
-fn generate_answer(
-    question: &str,
-    context_texts: &[String],
-    context_chunks: &[ContextChunk],
-) -> String {
-    if context_texts.is_empty() {
-        return format!(
-            "在知识库中无对应内容。\n\n关于\"{}\"，我将尝试基于一般知识为您回答：\n\n这是一个模拟的回答。在实际集成LLM后，这里将显示LLM基于一般知识生成的回答。",
-            question
-        );
-    }
-
-    let has_relevant = context_chunks
-        .iter()
-        .any(|c| c.score > 0.1);
-
-    if !has_relevant {
-        return format!(
-            "在知识库中无对应内容。\n\n关于\"{}\"，我在当前项目的知识库中没有找到高度相关的内容。以下是一些可能相关的信息供参考：\n\n{}",
-            question,
-            context_texts
-                .iter()
-                .take(2)
-                .map(|t| format!("- {}\n", t))
-                .collect::<Vec<_>>()
-                .join("")
-        );
-    }
-
-    let source_docs: Vec<String> = context_chunks
-        .iter()
-        .map(|c| c.document_name.clone())
-        .collect::<std::collections::HashSet<_>>()
-        .into_iter()
-        .collect();
-
-    let relevant_chunks: Vec<&ContextChunk> = context_chunks
-        .iter()
-        .filter(|c| c.score > 0.15)
-        .collect();
-
-    if relevant_chunks.is_empty() {
-        return format!(
-            "关于\"{}\"，我在当前项目的以下文档中找到了一些相关信息：\n\n来源: {}\n\n{}",
-            question,
-            source_docs.join(", "),
-            context_chunks
-                .iter()
-                .take(3)
-                .map(|c| format!("[来自 {}]: {}\n\n", c.document_name, c.content))
-                .collect::<Vec<_>>()
-                .join("")
-        );
-    }
-
-    let main_answer = relevant_chunks
-        .iter()
-        .take(2)
-        .map(|c| c.content.clone())
-        .collect::<Vec<_>>()
-        .join("\n\n");
-
-    let mut answer = format!("关于\"{}\"，根据当前项目知识库中的信息：\n\n{}\n\n", question, main_answer);
-
-    if relevant_chunks.len() > 2 {
-        answer.push_str("\n更多相关信息：\n");
-        for chunk in relevant_chunks.iter().skip(2).take(2) {
-            let snippet = chunk.content.chars().take(100).collect::<String>();
-            answer.push_str(&format!("- [{}] {}{}\n", 
-                chunk.document_name,
-                snippet,
-                if chunk.content.len() > 100 { "..." } else { "" }
-            ));
-        }
-    }
-
-    answer.push_str(&format!("\n参考来源: {}", source_docs.join(", ")));
-
-    answer
 }

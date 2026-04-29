@@ -27,5 +27,9 @@ mime_guess = "2"
 regex = "1"
 unicode-segmentation = "1"
 
+# LLM服务
+reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls-native-roots"] }
+idna = "=0.5.0"
+
 [dev-dependencies]
 tokio-test = "0.4"

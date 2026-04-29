@@ -1,3 +1,4 @@
+use crate::services::llm_service::LlmConfig;
 use std::path::PathBuf;
 
 #[derive(Clone, Debug)]
@@ -6,6 +7,7 @@ pub struct Config {
     pub vector_dim: usize,
     pub max_file_size: u64,
     pub supported_extensions: Vec<String>,
+    pub llm: LlmConfig,
 }
 
 impl Config {
@@ -21,6 +23,7 @@ impl Config {
                 "docx".to_string(),
                 "doc".to_string(),
             ],
+            llm: LlmConfig::default(),
         }
     }
 }
