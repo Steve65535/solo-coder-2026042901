@@ -17,6 +17,9 @@ pub enum AppError {
     #[error("会话不存在: {0}")]
     SessionNotFound(String),
 
+    #[error("项目不存在: {0}")]
+    ProjectNotFound(String),
+
     #[error("RAG检索错误: {0}")]
     RagError(String),
 
@@ -44,6 +47,7 @@ impl IntoResponse for AppError {
         let (status, message) = match &self {
             AppError::FileNotFound(msg) => (StatusCode::NOT_FOUND, msg.clone()),
             AppError::SessionNotFound(msg) => (StatusCode::NOT_FOUND, msg.clone()),
+            AppError::ProjectNotFound(msg) => (StatusCode::NOT_FOUND, msg.clone()),
             AppError::FileUploadError(msg) => (StatusCode::BAD_REQUEST, msg.clone()),
             AppError::ParseError(msg) => (StatusCode::BAD_REQUEST, msg.clone()),
             _ => (StatusCode::INTERNAL_SERVER_ERROR, self.to_string()),

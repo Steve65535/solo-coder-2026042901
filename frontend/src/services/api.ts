@@ -7,8 +7,17 @@ const api = axios.create({
   },
 });
 
+export interface Project {
+  id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Session {
   id: string;
+  project_id: string;
   title: string;
   created_at: string;
   updated_at: string;
@@ -16,6 +25,7 @@ export interface Session {
 
 export interface Document {
   id: string;
+  project_id: string;
   filename: string;
   original_name: string;
   file_path: string;
@@ -54,30 +64,45 @@ export interface AskResponse {
 
 export const healthCheck = () => api.get('/health');
 
-export const createSession = (title?: string) => 
-  api.post<Session>('/sessions', { title });
+export const createProject = (name: string, description?: string) => 
+  api.post<Project>('/projects', { name, description });
+
+export const getProject = (id: string) => 
+  api.get<Project>(`/projects/${id}`);
+
+export const listProjects = () => 
+  api.get<{ projects: Project[]; total: number }>('/projects');
+
+export const updateProject = (id: string, name?: string, description?: string) => 
+  api.put<Project>(`/projects/${id}`, { name, description });
+
+export const deleteProject = (id: string) => 
+  api.delete(`/projects/${id}`);
+
+export const createSession = (projectId: string, title?: string) => 
+  api.post<Session>('/sessions', { project_id: projectId, title });
 
 export const getSession = (id: string) => 
   api.get<Session>(`/sessions/${id}`);
 
-export const listSessions = () => 
-  api.get<{ sessions: Session[]; total: number }>('/sessions');
+export const listSessions = (projectId: string) => 
+  api.get<{ sessions: Session[]; total: number }>(`/projects/${projectId}/sessions`);
 
 export const deleteSession = (id: string) => 
   api.delete(`/sessions/${id}`);
 
-export const uploadFile = (file: File) => {
+export const uploadFile = (projectId: string, file: File) => {
   const formData = new FormData();
   formData.append('file', file);
-  return api.post<{ document: Document; chunk_count: number }>('/files/upload', formData, {
+  return api.post<{ document: Document; chunk_count: number }>(`/projects/${projectId}/files/upload`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data',
     },
   });
 };
 
-export const listFiles = () => 
-  api.get<{ documents: Document[]; total: number }>('/files');
+export const listFiles = (projectId: string) => 
+  api.get<{ documents: Document[]; total: number }>(`/projects/${projectId}/files`);
 
 export const deleteFile = (id: string) => 
   api.delete(`/files/${id}`);

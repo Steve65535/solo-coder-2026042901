@@ -1,8 +1,10 @@
 import { create } from 'zustand';
-import { Session, ChatMessage, Document } from '../services/api';
+import { Project, Session, ChatMessage, Document } from '../services/api';
 import * as api from '../services/api';
 
 interface AppState {
+  projects: Project[];
+  currentProjectId: string | null;
   sessions: Session[];
   currentSessionId: string | null;
   messages: ChatMessage[];
@@ -10,22 +12,30 @@ interface AppState {
   isLoading: boolean;
   error: string | null;
   
+  setCurrentProjectId: (id: string | null) => void;
+  loadProjects: () => Promise<void>;
+  createProject: (name: string, description?: string) => Promise<string>;
+  updateProject: (id: string, name?: string, description?: string) => Promise<void>;
+  deleteProject: (id: string) => Promise<void>;
+  
   setCurrentSessionId: (id: string | null) => void;
-  loadSessions: () => Promise<void>;
-  createSession: (title?: string) => Promise<string>;
+  loadSessions: (projectId: string) => Promise<void>;
+  createSession: (projectId: string, title?: string) => Promise<string>;
   deleteSession: (id: string) => Promise<void>;
   
   loadMessages: (sessionId: string) => Promise<void>;
   sendMessage: (sessionId: string, question: string) => Promise<void>;
   
-  loadDocuments: () => Promise<void>;
-  uploadFile: (file: File) => Promise<void>;
+  loadDocuments: (projectId: string) => Promise<void>;
+  uploadFile: (projectId: string, file: File) => Promise<void>;
   deleteDocument: (id: string) => Promise<void>;
   
   clearError: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
+  projects: [],
+  currentProjectId: null,
   sessions: [],
   currentSessionId: null,
   messages: [],
@@ -33,25 +43,114 @@ export const useAppStore = create<AppState>((set, get) => ({
   isLoading: false,
   error: null,
 
-  setCurrentSessionId: (id) => set({ currentSessionId: id }),
+  setCurrentProjectId: (id) => {
+    set({ currentProjectId: id, sessions: [], currentSessionId: null, messages: [] });
+  },
 
-  loadSessions: async () => {
+  loadProjects: async () => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.listSessions();
-      set({ sessions: response.data.sessions });
+      const response = await api.listProjects();
+      const projects = response.data.projects;
+      set({ projects });
+      
+      if (projects.length > 0 && !get().currentProjectId) {
+        set({ currentProjectId: projects[0].id });
+      }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
-      set({ error: err.response?.data?.message || '加载会话失败' });
+      set({ error: err.response?.data?.message || '加载项目列表失败' });
     } finally {
       set({ isLoading: false });
     }
   },
 
-  createSession: async (title) => {
+  createProject: async (name, description) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.createSession(title);
+      const response = await api.createProject(name, description);
+      const newProject = response.data;
+      set((state) => ({
+        projects: [newProject, ...state.projects],
+        currentProjectId: newProject.id,
+        sessions: [],
+        currentSessionId: null,
+        messages: [],
+        documents: [],
+      }));
+      return newProject.id;
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      set({ error: err.response?.data?.message || '创建项目失败' });
+      throw error;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  updateProject: async (id, name, description) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.updateProject(id, name, description);
+      const updatedProject = response.data;
+      set((state) => ({
+        projects: state.projects.map((p) =>
+          p.id === id ? updatedProject : p
+        ),
+      }));
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      set({ error: err.response?.data?.message || '更新项目失败' });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  deleteProject: async (id) => {
+    set({ isLoading: true, error: null });
+    try {
+      await api.deleteProject(id);
+      set((state) => {
+        const newProjects = state.projects.filter((p) => p.id !== id);
+        const newCurrentId = state.currentProjectId === id 
+          ? (newProjects.length > 0 ? newProjects[0].id : null)
+          : state.currentProjectId;
+        return {
+          projects: newProjects,
+          currentProjectId: newCurrentId,
+          sessions: state.currentProjectId === id ? [] : state.sessions,
+          currentSessionId: state.currentProjectId === id ? null : state.currentSessionId,
+          messages: state.currentProjectId === id ? [] : state.messages,
+          documents: state.currentProjectId === id ? [] : state.documents,
+        };
+      });
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      set({ error: err.response?.data?.message || '删除项目失败' });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  setCurrentSessionId: (id) => set({ currentSessionId: id }),
+
+  loadSessions: async (projectId) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.listSessions(projectId);
+      set({ sessions: response.data.sessions });
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      set({ error: err.response?.data?.message || '加载会话列表失败' });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  createSession: async (projectId, title) => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await api.createSession(projectId, title);
       const newSession = response.data;
       set((state) => ({
         sessions: [newSession, ...state.sessions],
@@ -169,10 +268,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  loadDocuments: async () => {
+  loadDocuments: async (projectId) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.listFiles();
+      const response = await api.listFiles(projectId);
       set({ documents: response.data.documents });
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
@@ -182,10 +281,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  uploadFile: async (file) => {
+  uploadFile: async (projectId, file) => {
     set({ isLoading: true, error: null });
     try {
-      const response = await api.uploadFile(file);
+      const response = await api.uploadFile(projectId, file);
       set((state) => ({
         documents: [response.data.document, ...state.documents],
       }));

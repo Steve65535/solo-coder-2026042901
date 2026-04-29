@@ -22,8 +22,16 @@ pub struct UploadResponse {
 
 pub async fn upload_file(
     State(state): State<Arc<AppState>>,
+    Path(project_id): Path<Uuid>,
     mut multipart: Multipart,
 ) -> Result<Json<UploadResponse>> {
+    {
+        let projects = state.projects.read().await;
+        if !projects.contains_key(&project_id) {
+            return Err(AppError::ProjectNotFound(format!("项目 {} 不存在", project_id)));
+        }
+    }
+
     let file_service = FileService::new(
         state.config.upload_dir.clone(),
         state.config.max_file_size,
@@ -68,6 +76,7 @@ pub async fn upload_file(
     let chunk_vectors = rag_engine.process_document(&content)?;
 
     let document = file_service.create_document(
+        project_id,
         original_name.clone(),
         storage_name,
         file_bytes.len() as u64,
@@ -101,17 +110,31 @@ pub async fn upload_file(
     }))
 }
 
-pub async fn list_files(State(state): State<Arc<AppState>>) -> Json<DocumentListResponse> {
+pub async fn list_files(
+    State(state): State<Arc<AppState>>,
+    Path(project_id): Path<Uuid>,
+) -> Result<Json<DocumentListResponse>> {
+    {
+        let projects = state.projects.read().await;
+        if !projects.contains_key(&project_id) {
+            return Err(AppError::ProjectNotFound(format!("项目 {} 不存在", project_id)));
+        }
+    }
+
     let docs = state.documents.read().await;
     
-    let mut documents: Vec<Document> = docs.values().cloned().collect();
+    let mut documents: Vec<Document> = docs
+        .values()
+        .filter(|d| d.project_id == project_id)
+        .cloned()
+        .collect();
     documents.sort_by(|a, b| b.created_at.cmp(&a.created_at));
     let total = documents.len();
 
-    Json(DocumentListResponse {
+    Ok(Json(DocumentListResponse {
         documents,
         total,
-    })
+    }))
 }
 
 pub async fn delete_file(

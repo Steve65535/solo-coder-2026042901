@@ -11,6 +11,7 @@ export default function ChatPage() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   
   const {
+    currentProjectId,
     currentSessionId,
     messages,
     loadMessages,
@@ -18,11 +19,13 @@ export default function ChatPage() {
     createSession,
     isLoading,
     sessions,
+    projects,
   } = useAppStore();
 
   const [input, setInput] = useState('');
   const [expandedChunks, setExpandedChunks] = useState<Set<string>>(new Set());
 
+  const currentProject = projects.find((p) => p.id === currentProjectId);
   const currentSession = sessions.find((s) => s.id === currentSessionId);
 
   useEffect(() => {
@@ -42,11 +45,12 @@ export default function ChatPage() {
     setInput('');
 
     let targetSessionId = currentSessionId;
+    const targetProjectId = currentProjectId;
     
-    if (!targetSessionId) {
+    if (!targetSessionId && targetProjectId) {
       try {
-        targetSessionId = await createSession(question.slice(0, 30));
-        navigate(`/session/${targetSessionId}`);
+        targetSessionId = await createSession(targetProjectId, question.slice(0, 30));
+        navigate(`/projects/${targetProjectId}/session/${targetSessionId}`);
       } catch {
         return;
       }
@@ -92,16 +96,18 @@ export default function ChatPage() {
               {currentSession?.title || '新建对话'}
             </h1>
             <p className="text-sm text-gray-500">
-              基于 RAG 技术的智能知识问答
+              {currentProject ? `项目: ${currentProject.name}` : '基于 RAG 技术的智能知识问答'}
             </p>
           </div>
-          <button
-            onClick={() => navigate('/files')}
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            添加知识
-          </button>
+          {currentProjectId && (
+            <button
+              onClick={() => navigate(`/projects/${currentProjectId}/files`)}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              添加知识
+            </button>
+          )}
         </div>
       </header>
 
@@ -115,7 +121,7 @@ export default function ChatPage() {
               开始智能问答
             </h2>
             <p className="text-gray-500 max-w-md mb-6">
-              上传文档到知识库后，我可以基于文档内容回答您的问题。
+              上传文档到当前项目的知识库后，我可以基于文档内容回答您的问题。
               支持混合召回和智能排序，为您提供最相关的答案。
             </p>
             <div className="grid grid-cols-2 gap-3 max-w-md w-full">
@@ -126,7 +132,7 @@ export default function ChatPage() {
                 请介绍一下系统的功能
               </button>
               <button
-                onClick={() => navigate('/files')}
+                onClick={() => currentProjectId && navigate(`/projects/${currentProjectId}/files`)}
                 className="p-3 text-left text-sm text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 先上传一些文档

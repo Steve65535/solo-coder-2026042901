@@ -5,6 +5,7 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Document {
     pub id: Uuid,
+    pub project_id: Uuid,
     pub filename: String,
     pub original_name: String,
     pub file_path: String,

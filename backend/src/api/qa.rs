@@ -9,6 +9,7 @@ use uuid::Uuid;
 use crate::core::app_state::AppState;
 use crate::core::error::{AppError, Result};
 use crate::models::chat::{AskRequest, AskResponse, ChatMessage, ContextChunk, MessageRole};
+use crate::models::document::Document;
 use crate::models::rag::HybridSearchQuery;
 use crate::services::rag_engine::RagEngine;
 
@@ -18,21 +19,41 @@ pub async fn ask_question(
 ) -> Result<Json<AskResponse>> {
     let session_id = req.session_id;
 
-    {
+    let (project_id, session_exists) = {
         let sessions = state.sessions.read().await;
-        if !sessions.contains_key(&session_id) {
-            return Err(AppError::SessionNotFound(format!("会话 {} 不存在", session_id)));
-        }
-    }
-
-    let chunks = {
-        let chunks_store = state.chunks.read().await;
-        chunks_store.values().cloned().collect::<Vec<_>>()
+        let session = sessions.get(&session_id);
+        (session.map(|s| s.project_id), session.is_some())
     };
 
-    let documents = {
+    if !session_exists {
+        return Err(AppError::SessionNotFound(format!("会话 {} 不存在", session_id)));
+    }
+
+    let project_id = project_id.unwrap();
+
+    let (project_docs, project_chunks) = {
         let docs_store = state.documents.read().await;
-        docs_store.clone()
+        let chunks_store = state.chunks.read().await;
+        
+        let project_doc_ids: std::collections::HashSet<Uuid> = docs_store
+            .values()
+            .filter(|d| d.project_id == project_id)
+            .map(|d| d.id)
+            .collect();
+
+        let project_docs: std::collections::HashMap<Uuid, Document> = docs_store
+            .iter()
+            .filter(|(_, d)| d.project_id == project_id)
+            .map(|(id, d)| (*id, d.clone()))
+            .collect();
+
+        let project_chunks: Vec<_> = chunks_store
+            .values()
+            .filter(|c| project_doc_ids.contains(&c.document_id))
+            .cloned()
+            .collect();
+
+        (project_docs, project_chunks)
     };
 
     let rag_engine = RagEngine::new(state.config.vector_dim);
@@ -46,13 +67,13 @@ pub async fn ask_question(
         keyword_weight: 0.4,
     };
 
-    let mut results = rag_engine.hybrid_search(&search_query, &chunks)?;
-    rag_engine.rerank(&req.question, &mut results, &chunks)?;
+    let mut results = rag_engine.hybrid_search(&search_query, &project_chunks)?;
+    rag_engine.rerank(&req.question, &mut results, &project_chunks)?;
 
     let context_chunks: Vec<ContextChunk> = results
         .iter()
         .map(|r| {
-            let doc_name = documents
+            let doc_name = project_docs
                 .get(&r.document_id)
                 .map(|d| d.original_name.clone())
                 .unwrap_or_else(|| "未知文档".to_string());
@@ -156,7 +177,7 @@ fn generate_answer(
 ) -> String {
     if context_texts.is_empty() {
         return format!(
-            "抱歉，我在知识库中没有找到与\"{}\"相关的内容。请先上传相关文档。",
+            "抱歉，我在当前项目的知识库中没有找到与\"{}\"相关的内容。请先上传相关文档到该项目。",
             question
         );
     }
@@ -167,7 +188,7 @@ fn generate_answer(
 
     if !has_relevant {
         return format!(
-            "根据已上传的文档，我没有找到与\"{}\"高度相关的内容。以下是一些可能相关的信息：\n\n{}",
+            "根据当前项目已上传的文档，我没有找到与\"{}\"高度相关的内容。以下是一些可能相关的信息：\n\n{}",
             question,
             context_texts
                 .iter()
@@ -192,7 +213,7 @@ fn generate_answer(
 
     if relevant_chunks.is_empty() {
         return format!(
-            "关于\"{}\"，我在以下文档中找到了一些相关信息：\n\n来源: {}\n\n{}",
+            "关于\"{}\"，我在当前项目的以下文档中找到了一些相关信息：\n\n来源: {}\n\n{}",
             question,
             source_docs.join(", "),
             context_chunks
@@ -211,7 +232,7 @@ fn generate_answer(
         .collect::<Vec<_>>()
         .join("\n\n");
 
-    let mut answer = format!("关于\"{}\"，根据知识库中的信息：\n\n{}\n\n", question, main_answer);
+    let mut answer = format!("关于\"{}\"，根据当前项目知识库中的信息：\n\n{}\n\n", question, main_answer);
 
     if relevant_chunks.len() > 2 {
         answer.push_str("\n更多相关信息：\n");

@@ -13,12 +13,20 @@ use crate::models::session::{CreateSessionRequest, Session, SessionListResponse}
 pub async fn create_session(
     State(state): State<Arc<AppState>>,
     Json(req): Json<CreateSessionRequest>,
-) -> Json<Session> {
+) -> Result<Json<Session>> {
+    {
+        let projects = state.projects.read().await;
+        if !projects.contains_key(&req.project_id) {
+            return Err(AppError::ProjectNotFound(format!("项目 {} 不存在", req.project_id)));
+        }
+    }
+
     let session_id = Uuid::new_v4();
     let now = Utc::now();
     
     let session = Session {
         id: session_id,
+        project_id: req.project_id,
         title: req.title.unwrap_or_else(|| format!("对话 {}", session_id.to_string().split('-').next().unwrap_or(""))),
         created_at: now,
         updated_at: now,
@@ -30,7 +38,7 @@ pub async fn create_session(
     let mut history = state.chat_history.write().await;
     history.insert(session_id, Vec::new());
 
-    Json(session)
+    Ok(Json(session))
 }
 
 pub async fn get_session(
@@ -46,17 +54,31 @@ pub async fn get_session(
         .ok_or_else(|| AppError::SessionNotFound(format!("会话 {} 不存在", id)))
 }
 
-pub async fn list_sessions(State(state): State<Arc<AppState>>) -> Json<SessionListResponse> {
+pub async fn list_sessions(
+    State(state): State<Arc<AppState>>,
+    Path(project_id): Path<Uuid>,
+) -> Result<Json<SessionListResponse>> {
+    {
+        let projects = state.projects.read().await;
+        if !projects.contains_key(&project_id) {
+            return Err(AppError::ProjectNotFound(format!("项目 {} 不存在", project_id)));
+        }
+    }
+
     let sessions = state.sessions.read().await;
     
-    let mut session_list: Vec<Session> = sessions.values().cloned().collect();
+    let mut session_list: Vec<Session> = sessions
+        .values()
+        .filter(|s| s.project_id == project_id)
+        .cloned()
+        .collect();
     session_list.sort_by(|a, b| b.updated_at.cmp(&a.updated_at));
     let total = session_list.len();
 
-    Json(SessionListResponse {
+    Ok(Json(SessionListResponse {
         sessions: session_list,
         total,
-    })
+    }))
 }
 
 pub async fn delete_session(

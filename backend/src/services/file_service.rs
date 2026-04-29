@@ -64,6 +64,7 @@ impl FileService {
 
     pub fn create_document(
         &self,
+        project_id: Uuid,
         original_name: String,
         storage_name: String,
         file_size: u64,
@@ -74,6 +75,7 @@ impl FileService {
 
         Document {
             id,
+            project_id,
             filename: storage_name.clone(),
             original_name,
             file_path: self.get_file_path(&storage_name).to_string_lossy().to_string(),

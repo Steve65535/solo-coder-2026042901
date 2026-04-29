@@ -1,5 +1,5 @@
 use axum::{
-    routing::{delete, get, post},
+    routing::{delete, get, post, put},
     Router,
 };
 use std::net::SocketAddr;
@@ -30,12 +30,17 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(api::health::health_check))
+        .route("/api/projects", post(api::project::create_project))
+        .route("/api/projects", get(api::project::list_projects))
+        .route("/api/projects/:id", get(api::project::get_project))
+        .route("/api/projects/:id", put(api::project::update_project))
+        .route("/api/projects/:id", delete(api::project::delete_project))
+        .route("/api/projects/:project_id/sessions", get(api::session::list_sessions))
         .route("/api/sessions", post(api::session::create_session))
         .route("/api/sessions/:id", get(api::session::get_session))
-        .route("/api/sessions", get(api::session::list_sessions))
         .route("/api/sessions/:id", delete(api::session::delete_session))
-        .route("/api/files/upload", post(api::file::upload_file))
-        .route("/api/files", get(api::file::list_files))
+        .route("/api/projects/:project_id/files/upload", post(api::file::upload_file))
+        .route("/api/projects/:project_id/files", get(api::file::list_files))
         .route("/api/files/:id", delete(api::file::delete_file))
         .route("/api/qa/ask", post(api::qa::ask_question))
         .route("/api/qa/history/:session_id", get(api::qa::get_history))
