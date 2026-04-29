@@ -24,23 +24,10 @@ export default function MainLayout() {
     setCurrentSessionId,
     isLoading,
     error,
-    clearError
+    clearError,
+    theme,
+    toggleTheme
   } = useAppStore();
-  
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
-  
-  const toggleTheme = () => {
-    const isDark = document.documentElement.classList.contains('dark');
-    if (isDark) {
-      document.documentElement.classList.remove('dark');
-      setTheme('light');
-      localStorage.setItem('theme', 'light');
-    } else {
-      document.documentElement.classList.add('dark');
-      setTheme('dark');
-      localStorage.setItem('theme', 'dark');
-    }
-  };
   
   const [createLoading, setCreateLoading] = useState(false);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
@@ -83,8 +70,13 @@ export default function MainLayout() {
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const initialTheme = savedTheme === 'dark' || (!savedTheme && prefersDark) ? 'dark' : 'light';
-    setTheme(initialTheme);
+    const shouldBeDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+    
+    if (shouldBeDark && theme !== 'dark') {
+      useAppStore.setState({ theme: 'dark' });
+    } else if (!shouldBeDark && theme !== 'light') {
+      useAppStore.setState({ theme: 'light' });
+    }
   }, []);
 
   useEffect(() => {

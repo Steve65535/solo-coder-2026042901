@@ -4,6 +4,19 @@ import * as api from '../services/api';
 
 type Theme = 'light' | 'dark';
 
+const getInitialTheme = (): Theme => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('theme') as Theme;
+    if (saved === 'light' || saved === 'dark') {
+      return saved;
+    }
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+  }
+  return 'light';
+};
+
 interface AppState {
   projects: Project[];
   currentProjectId: string | null;
@@ -49,7 +62,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   documents: [],
   isLoading: false,
   error: null,
-  theme: 'light',
+  theme: getInitialTheme(),
 
   setCurrentProjectId: (id) => {
     set({ currentProjectId: id, sessions: [], currentSessionId: null, messages: [] });
@@ -341,9 +354,25 @@ export const useAppStore = create<AppState>((set, get) => ({
   toggleTheme: () => {
     const newTheme = get().theme === 'light' ? 'dark' : 'light';
     set({ theme: newTheme });
+    if (typeof window !== 'undefined') {
+      if (newTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      localStorage.setItem('theme', newTheme);
+    }
   },
 
   setTheme: (theme) => {
     set({ theme });
+    if (typeof window !== 'undefined') {
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      localStorage.setItem('theme', theme);
+    }
   },
 }));
