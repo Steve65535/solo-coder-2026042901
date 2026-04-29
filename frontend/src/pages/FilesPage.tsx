@@ -128,13 +128,13 @@ export default function FilesPage() {
 
   return (
     <div className="flex-1 flex flex-col h-full">
-      <header className="px-6 py-4 border-b border-gray-200 bg-white">
+      <header className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-gray-800">
+            <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
               知识库
             </h1>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
               {currentProject 
                 ? `项目: ${currentProject.name} - 管理上传的文档，支持 txt、md、pdf、docx 格式`
                 : '管理上传的文档，支持 txt、md、pdf、docx 格式'}
@@ -152,19 +152,19 @@ export default function FilesPage() {
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin p-6">
+      <div className="flex-1 overflow-y-auto scrollbar-thin p-6 bg-gray-50 dark:bg-gray-900">
         {(error || uploadError) && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-500 dark:text-red-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm text-red-700">{error || uploadError}</p>
+              <p className="text-sm text-red-700 dark:text-red-400">{error || uploadError}</p>
             </div>
             <button
               onClick={() => {
                 clearError();
                 setUploadError(null);
               }}
-              className="text-red-400 hover:text-red-600"
+              className="text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-300"
             >
               关闭
             </button>
@@ -172,21 +172,21 @@ export default function FilesPage() {
         )}
 
         {uploading && (
-          <div className="mb-6 p-4 bg-primary-50 border border-primary-200 rounded-lg">
+          <div className="mb-6 p-4 bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800 rounded-lg">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 {uploadProgress === 100 ? (
-                  <Check className="w-4 h-4 text-green-600" />
+                  <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
                 ) : (
-                  <Loader2 className="w-4 h-4 text-primary-600 animate-spin" />
+                  <Loader2 className="w-4 h-4 text-primary-600 dark:text-primary-400 animate-spin" />
                 )}
-                <span className="text-sm font-medium text-gray-700">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
                   {uploadProgress === 100 ? '上传完成' : '正在上传...'}
                 </span>
               </div>
-              <span className="text-sm text-gray-500">{uploadProgress}%</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{uploadProgress}%</span>
             </div>
-            <div className="w-full bg-primary-100 rounded-full h-2">
+            <div className="w-full bg-primary-100 dark:bg-primary-900/50 rounded-full h-2">
               <div
                 className="bg-primary-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${uploadProgress}%` }}
@@ -197,9 +197,9 @@ export default function FilesPage() {
 
         {!currentProjectId ? (
           <div className="text-center py-12">
-            <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">请先选择一个项目</p>
-            <p className="text-sm text-gray-400 mt-1">
+            <FileText className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+            <p className="text-gray-500 dark:text-gray-400">请先选择一个项目</p>
+            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
               在左侧边栏选择或创建一个项目来管理其知识库
             </p>
           </div>
@@ -212,8 +212,8 @@ export default function FilesPage() {
               onClick={() => fileInputRef.current?.click()}
               className={`mb-6 p-8 border-2 border-dashed rounded-xl text-center cursor-pointer transition-colors ${
                 dragOver
-                  ? 'border-primary-400 bg-primary-50'
-                  : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                  ? 'border-primary-400 dark:border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                  : 'border-gray-200 dark:border-gray-600 hover:border-primary-300 dark:hover:border-primary-500 hover:bg-gray-50 dark:hover:bg-gray-800'
               }`}
             >
               <input
@@ -224,31 +224,31 @@ export default function FilesPage() {
                 className="hidden"
               />
               <Upload className={`w-10 h-10 mx-auto mb-3 ${
-                dragOver ? 'text-primary-500' : 'text-gray-400'
+                dragOver ? 'text-primary-500 dark:text-primary-400' : 'text-gray-400 dark:text-gray-500'
               }`} />
-              <p className="text-sm font-medium text-gray-700 mb-1">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                 拖拽文件到这里或点击上传
               </p>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-gray-400 dark:text-gray-500">
                 支持 txt、md、pdf、docx 格式，单个文件最大 50MB
               </p>
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold text-gray-700">
+                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200">
                   已上传文件 ({documents.length})
                 </h2>
                 {isLoading && documents.length > 0 && (
-                  <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                  <Loader2 className="w-4 h-4 text-gray-400 dark:text-gray-500 animate-spin" />
                 )}
               </div>
 
               {documents.length === 0 ? (
                 <div className="text-center py-12">
-                  <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">暂无上传的文件</p>
-                  <p className="text-sm text-gray-400 mt-1">
+                  <FileText className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                  <p className="text-gray-500 dark:text-gray-400">暂无上传的文件</p>
+                  <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
                     上传文档后即可开始智能问答
                   </p>
                 </div>
@@ -257,28 +257,28 @@ export default function FilesPage() {
                   {documents.map((doc) => (
                     <div
                       key={doc.id}
-                      className="flex items-center gap-4 p-4 bg-white rounded-lg border border-gray-200 hover:border-primary-300 transition-colors"
+                      className="flex items-center gap-4 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-primary-300 dark:hover:border-primary-500 transition-colors"
                     >
-                      <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                      <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center flex-shrink-0">
                         {getFileIcon(doc.original_name)}
                       </div>
                       
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800 truncate">
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
                           {doc.original_name}
                         </p>
-                        <p className="text-xs text-gray-400 mt-0.5">
+                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                           {formatFileSize(doc.file_size)} · {formatDate(doc.created_at)}
                         </p>
                       </div>
 
                       <div className="flex items-center gap-2">
-                        <span className="px-2 py-1 text-xs bg-green-50 text-green-700 rounded">
+                        <span className="px-2 py-1 text-xs bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded">
                           已索引
                         </span>
                         <button
                           onClick={() => handleDelete(doc)}
-                          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                           title="删除文件"
                         >
                           <Trash2 className="w-4 h-4" />

@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { Project, Session, ChatMessage, Document } from '../services/api';
 import * as api from '../services/api';
 
+type Theme = 'light' | 'dark';
+
 interface AppState {
   projects: Project[];
   currentProjectId: string | null;
@@ -11,6 +13,7 @@ interface AppState {
   documents: Document[];
   isLoading: boolean;
   error: string | null;
+  theme: Theme;
   
   setCurrentProjectId: (id: string | null) => void;
   loadProjects: () => Promise<void>;
@@ -31,7 +34,29 @@ interface AppState {
   deleteDocument: (id: string) => Promise<void>;
   
   clearError: () => void;
+  toggleTheme: () => void;
+  setTheme: (theme: Theme) => void;
 }
+
+const getInitialTheme = (): Theme => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('theme') as Theme;
+    if (saved && (saved === 'light' || saved === 'dark')) {
+      return saved;
+    }
+    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      return 'dark';
+    }
+  }
+  return 'light';
+};
+
+const applyTheme = (theme: Theme) => {
+  if (typeof window !== 'undefined') {
+    document.documentElement.classList.toggle('dark', theme === 'dark');
+    localStorage.setItem('theme', theme);
+  }
+};
 
 export const useAppStore = create<AppState>((set, get) => ({
   projects: [],
@@ -42,6 +67,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   documents: [],
   isLoading: false,
   error: null,
+  theme: getInitialTheme(),
 
   setCurrentProjectId: (id) => {
     set({ currentProjectId: id, sessions: [], currentSessionId: null, messages: [] });
@@ -329,4 +355,15 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  toggleTheme: () => {
+    const newTheme = get().theme === 'light' ? 'dark' : 'light';
+    set({ theme: newTheme });
+    applyTheme(newTheme);
+  },
+
+  setTheme: (theme) => {
+    set({ theme });
+    applyTheme(theme);
+  },
 }));
