@@ -24,10 +24,23 @@ export default function MainLayout() {
     setCurrentSessionId,
     isLoading,
     error,
-    clearError,
-    theme,
-    toggleTheme
+    clearError
   } = useAppStore();
+  
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  
+  const toggleTheme = () => {
+    const isDark = document.documentElement.classList.contains('dark');
+    if (isDark) {
+      document.documentElement.classList.remove('dark');
+      setTheme('light');
+      localStorage.setItem('theme', 'light');
+    } else {
+      document.documentElement.classList.add('dark');
+      setTheme('dark');
+      localStorage.setItem('theme', 'dark');
+    }
+  };
   
   const [createLoading, setCreateLoading] = useState(false);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
@@ -66,6 +79,22 @@ export default function MainLayout() {
       setCurrentSessionId(pathParts[sessionIndex + 1]);
     }
   }, [location.pathname, setCurrentSessionId]);
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const initialTheme = savedTheme === 'dark' || (!savedTheme && prefersDark) ? 'dark' : 'light';
+    setTheme(initialTheme);
+  }, []);
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('theme', theme);
+  }, [theme]);
 
   const handleNewChat = async () => {
     let targetProjectId = urlProjectId;

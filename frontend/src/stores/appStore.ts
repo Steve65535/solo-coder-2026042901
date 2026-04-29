@@ -38,25 +38,7 @@ interface AppState {
   setTheme: (theme: Theme) => void;
 }
 
-const getInitialTheme = (): Theme => {
-  if (typeof window !== 'undefined') {
-    const saved = localStorage.getItem('theme') as Theme;
-    if (saved && (saved === 'light' || saved === 'dark')) {
-      return saved;
-    }
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-  }
-  return 'light';
-};
 
-const applyTheme = (theme: Theme) => {
-  if (typeof window !== 'undefined') {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    localStorage.setItem('theme', theme);
-  }
-};
 
 export const useAppStore = create<AppState>((set, get) => ({
   projects: [],
@@ -67,7 +49,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   documents: [],
   isLoading: false,
   error: null,
-  theme: getInitialTheme(),
+  theme: 'light',
 
   setCurrentProjectId: (id) => {
     set({ currentProjectId: id, sessions: [], currentSessionId: null, messages: [] });
@@ -359,11 +341,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   toggleTheme: () => {
     const newTheme = get().theme === 'light' ? 'dark' : 'light';
     set({ theme: newTheme });
-    applyTheme(newTheme);
   },
 
   setTheme: (theme) => {
     set({ theme });
-    applyTheme(theme);
   },
 }));
