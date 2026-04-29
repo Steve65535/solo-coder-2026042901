@@ -40,15 +40,13 @@ export default function MainLayout() {
 
   useEffect(() => {
     if (urlProjectId && urlProjectId !== 'default') {
-      if (currentProjectId !== urlProjectId) {
-        setCurrentProjectId(urlProjectId);
-      }
+      setCurrentProjectId(urlProjectId);
     } else if (urlProjectId === 'default' && projects.length > 0) {
       const firstProject = projects[0];
       navigate(`/projects/${firstProject.id}`, { replace: true });
       setCurrentProjectId(firstProject.id);
     }
-  }, [urlProjectId, currentProjectId, projects, setCurrentProjectId, navigate]);
+  }, [urlProjectId, projects, setCurrentProjectId, navigate]);
 
   useEffect(() => {
     if (currentProjectId) {
@@ -57,7 +55,7 @@ export default function MainLayout() {
         setExpandedProjects((prev) => new Set(prev).add(currentProjectId));
       }
     }
-  }, [currentProjectId, loadSessions, expandedProjects]);
+  }, [currentProjectId]);
 
   useEffect(() => {
     const pathParts = location.pathname.split('/');
@@ -74,7 +72,8 @@ export default function MainLayout() {
     try {
       const sessionId = await createSession(currentProjectId);
       navigate(`/projects/${currentProjectId}/session/${sessionId}`);
-    } catch {
+    } catch (error: unknown) {
+      console.error('创建会话失败:', error);
     } finally {
       setCreateLoading(false);
     }
@@ -90,7 +89,8 @@ export default function MainLayout() {
       setShowNewProjectModal(false);
       setNewProjectName('');
       setNewProjectDescription('');
-    } catch {
+    } catch (error: unknown) {
+      console.error('创建项目失败:', error);
     } finally {
       setCreateLoading(false);
     }
