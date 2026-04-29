@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import { Upload, Trash2, Loader2, FileText, File, AlertCircle, Check } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
 import { Document } from '@/services/api';
+import { useTranslation } from 'react-i18next';
 
 export default function FilesPage() {
+  const { t, i18n } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { 
     currentProjectId, 
@@ -39,13 +41,13 @@ export default function FilesPage() {
     const extension = '.' + file.name.split('.').pop()?.toLowerCase();
 
     if (!allowedExtensions.includes(extension || '')) {
-      setUploadError(`不支持的文件格式。支持的格式: ${allowedExtensions.join(', ')}`);
+      setUploadError(t('files.unsupportedFormat', { formats: allowedExtensions.join(', ') }));
       return;
     }
 
     const maxSize = 50 * 1024 * 1024;
     if (file.size > maxSize) {
-      setUploadError('文件大小超过限制 (最大 50MB)');
+      setUploadError(t('files.fileSizeExceeded'));
       return;
     }
 
@@ -66,7 +68,7 @@ export default function FilesPage() {
       }, 500);
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
-      setUploadError(error.response?.data?.message || '上传失败');
+      setUploadError(error.response?.data?.message || t('errors.uploadFailed'));
       setUploading(false);
       setUploadProgress(0);
     } finally {
@@ -90,7 +92,7 @@ export default function FilesPage() {
   };
 
   const handleDelete = async (doc: Document) => {
-    if (confirm(`确定要删除文件 "${doc.original_name}" 吗？`)) {
+    if (confirm(t('files.deleteFileConfirm', { name: doc.original_name }))) {
       await deleteDocument(doc.id);
     }
   };
@@ -109,7 +111,7 @@ export default function FilesPage() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('zh-CN', {
+    return new Date(dateStr).toLocaleDateString(i18n.language === 'zh' ? 'zh-CN' : 'en-US', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -132,12 +134,12 @@ export default function FilesPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold text-gray-800 dark:text-gray-100">
-              知识库
+              {t('files.knowledgeBase')}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400">
               {currentProject 
-                ? `项目: ${currentProject.name} - 管理上传的文档，支持 txt、md、pdf、docx 格式`
-                : '管理上传的文档，支持 txt、md、pdf、docx 格式'}
+                ? `${t('files.project')}: ${currentProject.name} - ${t('files.manageDocuments')}`
+                : t('files.manageDocuments')}
             </p>
           </div>
           {currentProjectId && (
@@ -146,7 +148,7 @@ export default function FilesPage() {
               className="flex items-center gap-2 px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg transition-colors"
             >
               <Upload className="w-4 h-4" />
-              上传文件
+              {t('files.uploadFile')}
             </button>
           )}
         </div>
@@ -166,7 +168,7 @@ export default function FilesPage() {
               }}
               className="text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-300"
             >
-              关闭
+              {t('common.close')}
             </button>
           </div>
         )}
@@ -181,7 +183,7 @@ export default function FilesPage() {
                   <Loader2 className="w-4 h-4 text-primary-600 dark:text-primary-400 animate-spin" />
                 )}
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                  {uploadProgress === 100 ? '上传完成' : '正在上传...'}
+                  {uploadProgress === 100 ? t('files.uploadComplete') : t('files.uploading')}
                 </span>
               </div>
               <span className="text-sm text-gray-500 dark:text-gray-400">{uploadProgress}%</span>
@@ -198,9 +200,9 @@ export default function FilesPage() {
         {!currentProjectId ? (
           <div className="text-center py-12">
             <FileText className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-500 dark:text-gray-400">请先选择一个项目</p>
+            <p className="text-gray-500 dark:text-gray-400">{t('files.pleaseSelectProject')}</p>
             <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-              在左侧边栏选择或创建一个项目来管理其知识库
+              {t('files.selectProjectFromSidebar')}
             </p>
           </div>
         ) : (

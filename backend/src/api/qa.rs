@@ -177,7 +177,7 @@ fn generate_answer(
 ) -> String {
     if context_texts.is_empty() {
         return format!(
-            "抱歉，我在当前项目的知识库中没有找到与\"{}\"相关的内容。请先上传相关文档到该项目。",
+            "在知识库中无对应内容。\n\n关于\"{}\"，我将尝试基于一般知识为您回答：\n\n这是一个模拟的回答。在实际集成LLM后，这里将显示LLM基于一般知识生成的回答。",
             question
         );
     }
@@ -188,7 +188,7 @@ fn generate_answer(
 
     if !has_relevant {
         return format!(
-            "根据当前项目已上传的文档，我没有找到与\"{}\"高度相关的内容。以下是一些可能相关的信息：\n\n{}",
+            "在知识库中无对应内容。\n\n关于\"{}\"，我在当前项目的知识库中没有找到高度相关的内容。以下是一些可能相关的信息供参考：\n\n{}",
             question,
             context_texts
                 .iter()
