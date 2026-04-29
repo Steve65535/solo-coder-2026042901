@@ -36,7 +36,7 @@ export default function MainLayout() {
 
   useEffect(() => {
     loadProjects();
-  }, [loadProjects]);
+  }, []);
 
   useEffect(() => {
     if (urlProjectId && urlProjectId !== 'default') {
@@ -66,12 +66,20 @@ export default function MainLayout() {
   }, [location.pathname, setCurrentSessionId]);
 
   const handleNewChat = async () => {
-    if (!currentProjectId) return;
+    let targetProjectId = urlProjectId;
+    
+    if (targetProjectId === 'default' && projects.length > 0) {
+      targetProjectId = projects[0].id;
+    }
+    
+    if (!targetProjectId || targetProjectId === 'default') {
+      return;
+    }
     
     setCreateLoading(true);
     try {
-      const sessionId = await createSession(currentProjectId);
-      navigate(`/projects/${currentProjectId}/session/${sessionId}`);
+      const sessionId = await createSession(targetProjectId);
+      navigate(`/projects/${targetProjectId}/session/${sessionId}`);
     } catch (error: unknown) {
       console.error('创建会话失败:', error);
     } finally {

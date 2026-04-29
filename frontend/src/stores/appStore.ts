@@ -138,7 +138,23 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const response = await api.listSessions(projectId);
-      set({ sessions: response.data.sessions });
+      
+      set((state) => {
+        if (state.currentProjectId !== projectId) {
+          return {};
+        }
+        
+        const serverSessions = response.data.sessions;
+        const serverIds = new Set(serverSessions.map(s => s.id));
+        
+        const localOnlySessions = state.sessions.filter(s => !serverIds.has(s.id));
+        
+        const mergedSessions = [...serverSessions, ...localOnlySessions].sort((a, b) => 
+          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        );
+        
+        return { sessions: mergedSessions };
+      });
     } catch (error: unknown) {
       const err = error as { response?: { data?: { message?: string } } };
       set({ error: err.response?.data?.message || '加载会话列表失败' });

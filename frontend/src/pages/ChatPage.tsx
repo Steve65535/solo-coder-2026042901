@@ -20,6 +20,7 @@ export default function ChatPage() {
     isLoading,
     sessions,
     projects,
+    clearError,
   } = useAppStore();
 
   const [input, setInput] = useState('');
@@ -44,23 +45,16 @@ export default function ChatPage() {
     const question = input.trim();
     setInput('');
 
-    let targetSessionId = currentSessionId;
-    const targetProjectId = currentProjectId;
+    const targetSessionId = currentSessionId;
     
-    if (!targetSessionId && targetProjectId) {
-      try {
-        targetSessionId = await createSession(targetProjectId, question.slice(0, 30));
-        navigate(`/projects/${targetProjectId}/session/${targetSessionId}`);
-      } catch {
-        return;
-      }
+    if (!targetSessionId) {
+      useAppStore.setState({ error: '请先点击"新建对话"创建一个会话' });
+      return;
     }
 
-    if (targetSessionId) {
-      try {
-        await sendMessage(targetSessionId, question);
-      } catch {
-      }
+    try {
+      await sendMessage(targetSessionId, question);
+    } catch {
     }
   };
 
